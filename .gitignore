@@ -1,0 +1,5 @@
+.env/
+lab0/*.txt
+lab1/*.txt
+lab1/.gz
+

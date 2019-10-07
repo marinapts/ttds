@@ -86,6 +86,33 @@ def plot_benfords_law(first_digits_counts):
     plt.show()
 
 
+def plot_heaps_law(tokenised_text):
+    """Plot Heap's
+
+    Args:
+        tokenised_text (list): List of words
+    """
+    vocab_size = list()
+    vocab = dict()
+    numb_words_read = 0
+
+    for idx, word in enumerate(tokenised_text):
+        numb_words_read += 1
+
+        if word in vocab:
+            vocab[word] += 1
+            vocab_size.append(vocab_size[-1])   # vocab size stays the same
+        else:
+            vocab[word] = 1
+            vocab_size.append(vocab_size[-1] + 1 if len(vocab_size) > 0 else 1)   # Increase the vocab size
+
+    plt.plot(np.arange(numb_words_read), vocab_size)
+    plt.suptitle('Heap\'s Law')
+    plt.xlabel('Number of words')
+    plt.ylabel('Vocabulary size')
+    plt.show()
+
+
 if __name__ == '__main__':
     BIBLE_FILE = 'bible.txt'
     WIKI_FILE = 'abstracts_wiki.txt'
@@ -125,10 +152,15 @@ if __name__ == '__main__':
         word_freq = Counter(normalised_text)
         counts = dict(word_freq.most_common())
         print('Frequency of words: {}\n', counts)
+
+        # Zipf's law
         labels, frequency = zip(*counts.items())
         rank = np.arange(len(labels)) + 1
         plot_zipfs_law(np.log(rank), np.log(frequency))
 
+        # Benford's law
         first_digits = [int(str(freq)[0]) for freq in frequency]
         first_digits_counts = dict(sorted(Counter(first_digits).items()))
         plot_benfords_law(first_digits_counts)
+
+        plot_heaps_law(tokenised_text)

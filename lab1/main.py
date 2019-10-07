@@ -1,7 +1,10 @@
 import urllib.request
 import os.path
 import re
+import matplotlib.pyplot as plt
+import numpy as np
 from stemming.porter2 import stem
+from collections import Counter
 
 
 def download_file_and_save(url, file_name):
@@ -53,20 +56,55 @@ def normalise(words):
     return list([stem(word) for word in words])
 
 
-if __name__ == '__main__':
-    # @TODO#2: Write code to download txt.gz
+def plot_zipfs_law(log_rank, log_frequency):
+    """Plots the rank of the words with their frequency on a log scale
 
+    Args:
+        log_rank (list): Log of word rank
+        log_frequency (list): Log of word frequency
+    """
+    plt.plot(log_rank, log_frequency)
+
+    plt.suptitle('Zipf\'s Law')
+    plt.xlabel('Rank (log scale)')
+    plt.ylabel('Frequency (log scale)')
+    plt.show()
+
+
+def plot_benfords_law(first_digits_counts):
+    """Plot Benford's law
+
+    Args:
+        first_digits_counts (list): Frequency of the first digits of the word frequencies
+    """
+    first_digits_prob = [np.log(1+(1/digit)) for digit in first_digits_counts.keys()]
+
+    plt.bar(first_digits_counts.keys(), first_digits_prob)
+    plt.suptitle('Benford\'s Law')
+    plt.xlabel('First digit')
+    plt.ylabel('log(1 + 1/digit)')
+    plt.show()
+
+
+if __name__ == '__main__':
     BIBLE_FILE = 'bible.txt'
-    WIKI_FILE = 'abstracts.wiki.txt'
+    WIKI_FILE = 'abstracts_wiki.txt'
     STOP_WORDS_FILE = 'stop_words.txt'
+
+    WIKI_PREPROCESSED = 'wiki_preprocess.txt'
+    BIBLE_PREPROCESSED = 'bible_preprocess.txt'
 
     download_file_and_save(
         'http://www.gutenberg.org/cache/epub/10/pg10.txt',
-        'bible.txt')
+        BIBLE_FILE)
+    download_file_and_save(
+        'https://www.inf.ed.ac.uk/teaching/courses/tts/labs/lab1/abstracts.wiki.txt.gz',
+        WIKI_FILE)
     download_file_and_save(
         'http://members.unine.ch/jacques.savoy/clef/englishST.txt',
-        'stop_words.txt')
+        STOP_WORDS_FILE)
 
+    # Store stop words in a list
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
@@ -79,8 +117,18 @@ if __name__ == '__main__':
         normalised_text = normalise(text_with_no_stop_words)
 
         # Save preprocessed text to a new file
-        with open('bible_preprocess.txt', 'w+') as new_file:
-            print(type(normalised_text))
+        with open(BIBLE_PREPROCESSED, 'w+') as new_file:
             normalised_text_string = ' '.join(normalised_text)
             new_file.write(normalised_text_string)
-            # new_file.close()
+
+        # Calculate frequency of words
+        word_freq = Counter(normalised_text)
+        counts = dict(word_freq.most_common())
+        print('Frequency of words: {}\n', counts)
+        labels, frequency = zip(*counts.items())
+        rank = np.arange(len(labels)) + 1
+        plot_zipfs_law(np.log(rank), np.log(frequency))
+
+        first_digits = [int(str(freq)[0]) for freq in frequency]
+        first_digits_counts = dict(sorted(Counter(first_digits).items()))
+        plot_benfords_law(first_digits_counts)

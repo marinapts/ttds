@@ -1,3 +1,5 @@
+"""Summary
+"""
 import urllib.request
 import os.path
 import re
@@ -28,6 +30,9 @@ def tokenise(text):
 
     Args:
         text (string): The text provided to tokenise
+
+    Returns:
+        TYPE: Description
     """
     no_punctuation = re.sub(r"[.?\-\",!;'\n+]", "", text, flags=re.I)
     no_punctuation = re.sub(r"\s{2,}", "", no_punctuation, flags=re.I)
@@ -52,6 +57,12 @@ def remove_stop_words(words):
 
 def normalise(words):
     """Porter stemmer
+
+    Args:
+        words (TYPE): Description
+
+    Returns:
+        TYPE: Description
     """
     return list([stem(word) for word in words])
 
@@ -86,18 +97,22 @@ def plot_benfords_law(first_digits_counts):
     plt.show()
 
 
-def plot_heaps_law(tokenised_text):
+def heaps_law(tokenised_text):
     """Plot Heap's
 
     Args:
         tokenised_text (list): List of words
+
+    Returns:
+        total_num_words_vector (list): Number of words that were read
+        vocab_size (list): Number of unique words
     """
     vocab_size = list()
     vocab = dict()
-    numb_words_read = 0
+    num_words_read = 0
 
     for idx, word in enumerate(tokenised_text):
-        numb_words_read += 1
+        num_words_read += 1
 
         if word in vocab:
             vocab[word] += 1
@@ -106,10 +121,36 @@ def plot_heaps_law(tokenised_text):
             vocab[word] = 1
             vocab_size.append(vocab_size[-1] + 1 if len(vocab_size) > 0 else 1)   # Increase the vocab size
 
-    plt.plot(np.arange(numb_words_read), vocab_size)
+    total_num_words_vector = np.array(np.arange(num_words_read)).reshape(-1, 1)
+    plt.plot(total_num_words_vector, vocab_size)
     plt.suptitle('Heap\'s Law')
     plt.xlabel('Number of words')
     plt.ylabel('Vocabulary size')
+    # plt.show()
+
+    return total_num_words_vector, np.array(vocab_size).reshape(-1, 1)
+
+
+def fit_heaps_law_parameters(num_words_read_vector, vocab_size):
+    """Fit linear regression to Heap's Law
+
+    Args:
+        num_words_read_vector (list): Vector of inputs
+        vocab_size (list): Vector of outputs
+
+    Returns:
+        params (list): Vector of params b and log_k
+    """
+    transformed_v = np.ones(len(num_words_read_vector)).reshape(-1, 1)
+    log_v_vector = np.concatenate((np.log(num_words_read_vector), np.log(transformed_v)), axis=1)
+
+    params = np.linalg.lstsq(np.log(vocab_size), log_v_vector, rcond=None)[0]
+    b, log_k = params[0]
+
+    pred_vocab = np.exp(log_k) * (num_words_read_vector**b)
+
+    # Revisit this - predictions don't seem correct!
+    plt.plot(num_words_read_vector, pred_vocab)
     plt.show()
 
 
@@ -135,7 +176,7 @@ if __name__ == '__main__':
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
-    with open(BIBLE_FILE, 'r') as f:
+    with open(WIKI_FILE, 'r') as f:
         lines = f.readlines()
         print('{} lines of text'.format(len(lines)))
 
@@ -144,7 +185,7 @@ if __name__ == '__main__':
         normalised_text = normalise(text_with_no_stop_words)
 
         # Save preprocessed text to a new file
-        with open(BIBLE_PREPROCESSED, 'w+') as new_file:
+        with open(WIKI_PREPROCESSED, 'w+') as new_file:
             normalised_text_string = ' '.join(normalised_text)
             new_file.write(normalised_text_string)
 
@@ -163,4 +204,5 @@ if __name__ == '__main__':
         first_digits_counts = dict(sorted(Counter(first_digits).items()))
         plot_benfords_law(first_digits_counts)
 
-        plot_heaps_law(tokenised_text)
+        total_num_words_vector, vocab_size = heaps_law(tokenised_text)
+        fit_heaps_law_parameters(total_num_words_vector[1::], vocab_size[1::])

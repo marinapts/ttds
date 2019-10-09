@@ -1,8 +1,7 @@
 import urllib.request
 import os.path
 import re
-import matplotlib.pyplot as plt
-import numpy as np
+import pickle
 import xml.etree.ElementTree as ElementTree
 from stemming.porter2 import stem
 from collections import Counter
@@ -28,11 +27,11 @@ def tokenise(text):
     Returns:
         tokenised (list): List of tokens
     """
+    # @TODO: Remove only FT, not the date as well
     no_date_in_headline = re.sub(r"^.*?/+", "", text, flags=re.MULTILINE)   # Remove date from the headlines
     no_punctuation = re.sub(r"[.?\-\",!;'/:()\[\]\(\)&\n+\t+]", " ", no_date_in_headline, flags=re.MULTILINE)  # Remove punctuation
     no_extra_spaces = re.sub(r"\s{2,}", " ", no_punctuation, flags=re.I)   #
     tokenised = no_extra_spaces.lower().strip().split(' ')
-    # print('{} words after tokenisation'.format(len(tokenised)))
     return tokenised
 
 
@@ -44,7 +43,6 @@ def remove_stop_words(words):
         words (list): A list of words without the stop words included
     """
     words = list(filter(lambda x: x not in stop_words, words))
-    # print('{} words after removing stop words'.format(len(words)))
     return words
 
 
@@ -53,7 +51,7 @@ def normalise(words):
     Args:
         words (TYPE): Description
     Returns:
-        TYPE: Description
+        TYPE: Normalised list of prepeocessed words
     """
     return list([stem(word) for word in words])
 
@@ -73,36 +71,73 @@ def load_xml(xml_file, tag):
 
 def word_freq_in_doc(doc):
     word_freq = Counter(doc)
-    print('{} \n'.format(word_freq))
-
     return word_freq
+
+
+def get_word_indices_in_text(words, text):
+    text_token = tokenise(text)
+    word_indices = []
+
+    for word in words:
+        word_index = text_token.index(word.lower())
+        word_indices.append(word_index + 1)
+
+    return word_indices
+
+
+def find_indices_of_word(doc_list, word):
+    indices_list = [i+1 for i in range(len(doc_list)) if doc_list[i] == word]
+    return indices_list
 
 
 def positional_inverted_index(token_list):
     inverted_index = dict()
 
-    for index, doc in enumerate(token_list):
-        print('Document {}: {}'.format(index, doc))
-        for word in doc:
-            original_doc = doc_list[index]
-
-            word_occurences = re.findall(r"\b" + word + r"\w*", original_doc, flags=re.I)
-            doc_id = index+1
+    for index, token_doc_list in enumerate(token_list):
+        for word in token_doc_list:
+            word_indices = find_indices_of_word(token_doc_list, word)
             doc_indices_dict = {}
-            doc_indices_dict[doc_id] = word_occurences
+            doc_indices_dict[index + 1] = word_indices
 
             if word in inverted_index:
                 inverted_index[word].update(doc_indices_dict)
             else:
                 inverted_index.setdefault(word, doc_indices_dict)
 
-    print(inverted_index)
+    return inverted_index
+
+
+def save_inverted_index_txt(inv_index, file_name):
+    f = open(file_name + '.txt', 'a+')
+
+    for word in inv_index:
+        indices_dict = inv_index[word]
+        f.write(word + ':\n')
+
+        for doc_num in indices_dict:
+            indices_str = ', '.join(map(str, indices_dict[doc_num]))
+            f.write('  ' + str(doc_num) + ': ' + indices_str + '\n')
+        f.write('\n')
+
+    f.close()
+
+
+# @TODO: Save binary file in the required format
+def save_file_binary(obj, file_name):
+    with open(file_name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_file_binary(file_name):
+    with open(file_name + '.pkl', 'rb') as f:
+        return pickle.load(f)
 
 
 if __name__ == '__main__':
-    STOP_WORDS_FILE = 'stop_words.txt'
+    STOP_WORDS_FILE = './data/stop_words.txt'
     SAMPLE_FILE = './data/sample.xml'
     TREC_SAMPLE_FILE = './data/trec.sample.xml'
+    INVERTED_INDEX_FILE = 'inverted_index'
 
     download_file_and_save(
         'http://members.unine.ch/jacques.savoy/clef/englishST.txt',
@@ -124,5 +159,7 @@ if __name__ == '__main__':
         token_list.append(preprocess(headline))
         token_list.append(preprocess(text))
 
-    token_list = token_list[0: 3]
-    positional_inverted_index(token_list)
+    token_list = token_list[0: 6]
+    inverted_index = positional_inverted_index(token_list)
+    save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
+    save_file_binary(inverted_index, INVERTED_INDEX_FILE)

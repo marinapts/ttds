@@ -5,6 +5,7 @@ import pickle
 import xml.etree.ElementTree as ElementTree
 from stemming.porter2 import stem
 from collections import Counter
+from index_search import create_boolean_search_table
 
 
 def download_file_and_save(url, file_name):
@@ -18,6 +19,7 @@ def download_file_and_save(url, file_name):
         with urllib.request.urlopen(url) as response, open(file_name, 'wb') as out_file:
             data = response.read()  # a `bytes` object
             print('Saving file as {}...'.format(file_name))
+            out_file.write(data)
 
 
 def tokenise(text):
@@ -147,19 +149,24 @@ if __name__ == '__main__':
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
-    root = load_xml(TREC_SAMPLE_FILE, './DOC')
+    root = load_xml(SAMPLE_FILE, './DOC')
     doc_list = []
     token_list = []
 
     for doc in root:
-        headline = doc.find('HEADLINE').text
-        text = doc.find('TEXT').text
-        doc_list.append(headline)
+        # Uncomment the following lines when using trec.sample.xml
+
+        # headline = doc.find('HEADLINE').text
+        # text = doc.find('TEXT').text
+        text = doc.find('Text').text
+        # doc_list.append(headline)
         doc_list.append(text)
-        token_list.append(preprocess(headline))
+        # token_list.append(preprocess(headline))
         token_list.append(preprocess(text))
 
-    token_list = token_list[0: 6]
+    # token_list = token_list[0: 6]
     inverted_index = positional_inverted_index(token_list)
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
+
+    create_boolean_search_table(inverted_index, len(doc_list))

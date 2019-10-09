@@ -1,5 +1,3 @@
-"""Summary
-"""
 import urllib.request
 import os.path
 import re
@@ -34,7 +32,7 @@ def tokenise(text):
     Returns:
         TYPE: Description
     """
-    no_punctuation = re.sub(r"[.?\-\",!;'\n+]", "", text, flags=re.I)
+    no_punctuation = re.sub(r"[.?\-\",!;':()\[\\]\n+\t+]", "", text, flags=re.I)
     no_punctuation = re.sub(r"\s{2,}", "", no_punctuation, flags=re.I)
     tokenised = no_punctuation.lower().split(' ')
     print('{} words after tokenisation'.format(len(tokenised)))
@@ -176,7 +174,7 @@ if __name__ == '__main__':
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
-    with open(WIKI_FILE, 'r') as f:
+    with open(BIBLE_FILE, 'r') as f:
         lines = f.readlines()
         print('{} lines of text'.format(len(lines)))
 
@@ -185,7 +183,7 @@ if __name__ == '__main__':
         normalised_text = normalise(text_with_no_stop_words)
 
         # Save preprocessed text to a new file
-        with open(WIKI_PREPROCESSED, 'w+') as new_file:
+        with open(BIBLE_PREPROCESSED, 'w+') as new_file:
             normalised_text_string = ' '.join(normalised_text)
             new_file.write(normalised_text_string)
 

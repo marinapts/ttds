@@ -5,7 +5,7 @@ import pickle
 import xml.etree.ElementTree as ElementTree
 from stemming.porter2 import stem
 from collections import Counter
-from index_search import create_boolean_search_table
+from index_search import create_term_doc_collection, boolean_search, save_boolean_search_results
 
 
 def download_file_and_save(url, file_name):
@@ -140,6 +140,7 @@ if __name__ == '__main__':
     SAMPLE_FILE = './data/sample.xml'
     TREC_SAMPLE_FILE = './data/trec.sample.xml'
     INVERTED_INDEX_FILE = 'inverted_index'
+    RESULTS_BOOLEAN_FILE = 'results.boolean'
 
     download_file_and_save(
         'http://members.unine.ch/jacques.savoy/clef/englishST.txt',
@@ -169,4 +170,10 @@ if __name__ == '__main__':
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 
-    create_boolean_search_table(inverted_index, len(doc_list))
+    # Create a term-document incident collection that shows which documents each term belongs
+    collection_table = create_term_doc_collection(inverted_index, len(doc_list))
+
+    # @TODO: Load the file with the queries and preprocess(?) them to remove the index
+    queries = ['drink and pink', 'not pink and not ink', 'like or drink']
+    boolean_search_res = boolean_search(collection_table, queries)
+    save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

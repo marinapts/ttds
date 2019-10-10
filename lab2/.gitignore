@@ -1,3 +1,4 @@
 __pycache__/
 data/
 inverted_index.*
+results.boolean.txt

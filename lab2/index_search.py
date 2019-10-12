@@ -14,11 +14,11 @@ def create_term_doc_collection(inverted_index, num_of_docs):
 
         collection_dict[word] = boolean_vector[i]
 
-    print(collection_dict)
+    # print(collection_dict)
     return collection_dict
 
 
-def boolean_search(collection_dict, queries):
+def boolean_search(collection_dict, queries, token_doc_list):
     logical_operators = {'and': '&', 'or': '|', 'not': '~'}
     results_boolean = []
 
@@ -26,6 +26,7 @@ def boolean_search(collection_dict, queries):
     for index, query in enumerate(queries):
         # Split the query string into a list
         query_list = query.lower().split(' ')
+        print('query_list: ', query_list)
         converted_query = []
 
         # Convert each word except for the logical operators to a binary number
@@ -33,26 +34,35 @@ def boolean_search(collection_dict, queries):
             if word in logical_operators.keys():
                 converted_query.append(logical_operators[word])
             else:
-                converted_query.append('np.%s' % repr(collection_dict[word]))
+                if word not in collection_dict:
+                    # Word isn't included in any of the documents
+                    collection_dict_False = np.zeros(len(token_doc_list), dtype=bool)
+                    converted_query.append('np.%s' % repr(collection_dict_False))
+                else:
+                    # @TODO: inverted_index for 'correct' is correct, but collection_dict[word] is NOT
+                    print([i for i in collection_dict[word]])
+                    converted_query.append('np.%s' % repr(collection_dict[word]))
 
+
+        print('converted_query: ', converted_query)
         query_final = ' '.join(converted_query)
+        print('query_final: ', query_final)
         boolean_vector = eval(query_final)
 
         for b_index, b in enumerate(boolean_vector):
-            print(b_index)
+            # print(b_index)
             if b:
                 results_boolean.append([index+1, 0, b_index+1, 0, 1, 0])
         print('\n')
 
+    print('Boolean results:')
     print(results_boolean)
     return results_boolean
 
 
 def save_boolean_search_results(results_boolean, file_name):
-    print('\n\n')
-    f = open(file_name + '.txt', 'a+')
+    f = open(file_name + '.txt', 'w+')
     for row in results_boolean:
         row_str = ' '.join(str(i) for i in row)
-        print(row_str)
         f.write(row_str + '\n')
     f.close()

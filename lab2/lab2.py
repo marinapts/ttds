@@ -92,10 +92,10 @@ def find_indices_of_word(doc_list, word):
     return indices_list
 
 
-def positional_inverted_index(token_list):
+def positional_inverted_index(token_doc_list):
     inverted_index = dict()
 
-    for index, token_doc_list in enumerate(token_list):
+    for index, token_doc_list in enumerate(token_doc_list):
         for word in token_doc_list:
             word_indices = find_indices_of_word(token_doc_list, word)
             doc_indices_dict = {}
@@ -146,34 +146,36 @@ if __name__ == '__main__':
         'http://members.unine.ch/jacques.savoy/clef/englishST.txt',
         STOP_WORDS_FILE)
 
-    # Store stop words in a list
+    # Save stop words in a list
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
-    root = load_xml(SAMPLE_FILE, './DOC')
+    # Load the provided trec sample xml
+    root = load_xml(TREC_SAMPLE_FILE, './DOC')
     doc_list = []
-    token_list = []
+    token_doc_list = []
 
     for doc in root:
         # Uncomment the following lines when using trec.sample.xml
 
-        # headline = doc.find('HEADLINE').text
-        # text = doc.find('TEXT').text
-        text = doc.find('Text').text
-        # doc_list.append(headline)
+        headline = doc.find('HEADLINE').text
+        text = doc.find('TEXT').text
+        text = doc.find('TEXT').text
+        doc_list.append(headline)
         doc_list.append(text)
-        # token_list.append(preprocess(headline))
-        token_list.append(preprocess(text))
+        token_doc_list.append(preprocess(headline))
+        token_doc_list.append(preprocess(text))
 
-    # token_list = token_list[0: 6]
-    inverted_index = positional_inverted_index(token_list)
+    # token_doc_list = token_doc_list[0: 20]
+    inverted_index = positional_inverted_index(token_doc_list)
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 
-    # Create a term-document incident collection that shows which documents each term belongs
+    # Create a term-document incident collection that shows which documents each term belongs to
     collection_table = create_term_doc_collection(inverted_index, len(doc_list))
 
     # @TODO: Load the file with the queries and preprocess(?) them to remove the index
-    queries = ['drink and pink', 'not pink and not ink', 'like or drink']
-    boolean_search_res = boolean_search(collection_table, queries)
+    # queries = ['drink and pink', 'not pink and not ink', 'like or drink']
+    queries = ['correct']
+    boolean_search_res = boolean_search(collection_table, queries, token_doc_list)
     save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

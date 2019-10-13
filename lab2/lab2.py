@@ -176,6 +176,6 @@ if __name__ == '__main__':
 
     # @TODO: Load the file with the queries and preprocess(?) them to remove the index
     # queries = ['drink and pink', 'not pink and not ink', 'like or drink']
-    queries = ['correct']
+    queries = ['greec and not portug']
     boolean_search_res = boolean_search(collection_table, queries, token_doc_list)
     save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

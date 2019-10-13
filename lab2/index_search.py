@@ -14,7 +14,6 @@ def create_term_doc_collection(inverted_index, num_of_docs):
 
         collection_dict[word] = boolean_vector[i]
 
-    # print(collection_dict)
     return collection_dict
 
 
@@ -26,7 +25,6 @@ def boolean_search(collection_dict, queries, token_doc_list):
     for index, query in enumerate(queries):
         # Split the query string into a list
         query_list = query.lower().split(' ')
-        print('query_list: ', query_list)
         converted_query = []
 
         # Convert each word except for the logical operators to a binary number
@@ -39,24 +37,21 @@ def boolean_search(collection_dict, queries, token_doc_list):
                     collection_dict_False = np.zeros(len(token_doc_list), dtype=bool)
                     converted_query.append('np.%s' % repr(collection_dict_False))
                 else:
-                    # @TODO: inverted_index for 'correct' is correct, but collection_dict[word] is NOT
-                    print([i for i in collection_dict[word]])
-                    converted_query.append('np.%s' % repr(collection_dict[word]))
+                    word_vector_str = ''
+                    np.set_printoptions(threshold=np.prod(collection_dict[word].shape))
+                    for word in collection_dict[word]:
+                        word_vector_str += '%s, ' % (word)
 
+                    converted_query.append('np.array([%s])' % word_vector_str)
 
-        print('converted_query: ', converted_query)
-        query_final = ' '.join(converted_query)
-        print('query_final: ', query_final)
-        boolean_vector = eval(query_final)
+        final_query = ' '.join(converted_query)
+        boolean_vector = eval(final_query)
+        documents = [i+1 for i in range(len(boolean_vector)) if boolean_vector[i] == True]
 
-        for b_index, b in enumerate(boolean_vector):
-            # print(b_index)
-            if b:
-                results_boolean.append([index+1, 0, b_index+1, 0, 1, 0])
-        print('\n')
+        for doc in documents:
+            results_boolean.append([index+1, 0, doc, 0, 1, 0])
 
-    print('Boolean results:')
-    print(results_boolean)
+    print('Boolean results: ', results_boolean)
     return results_boolean
 
 

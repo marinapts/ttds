@@ -1,4 +1,5 @@
 import numpy as np
+from preprocess import normalise, tokenise
 
 
 def create_term_doc_collection(inverted_index, num_of_docs):
@@ -23,8 +24,8 @@ def boolean_search(collection_dict, queries, token_doc_list):
 
     # For each query find the related documents
     for index, query in enumerate(queries):
-        # Split the query string into a list
-        query_list = query.lower().split(' ')
+        # Preprocess the query string
+        query_list = normalise(tokenise(query))
         converted_query = []
 
         # Convert each word except for the logical operators to a binary number
@@ -51,7 +52,9 @@ def boolean_search(collection_dict, queries, token_doc_list):
         for doc in documents:
             results_boolean.append([index+1, 0, doc, 0, 1, 0])
 
-    print('Boolean results: ', results_boolean)
+    # print('Boolean results: ', results_boolean)
+    for res in results_boolean:
+        print(res)
     return results_boolean
 
 

@@ -1,10 +1,9 @@
 import urllib.request
 import os.path
-import re
 import pickle
 import xml.etree.ElementTree as ElementTree
-from stemming.porter2 import stem
 from collections import Counter
+from preprocess import tokenise, remove_stop_words, normalise
 from index_search import create_term_doc_collection, boolean_search, save_boolean_search_results
 
 
@@ -22,44 +21,8 @@ def download_file_and_save(url, file_name):
             out_file.write(data)
 
 
-def tokenise(text):
-    """Removes punctuation, new lines and multiple white
-    Args:
-        text (string): The text provided to tokenise
-    Returns:
-        tokenised (list): List of tokens
-    """
-    # @TODO: Remove only FT, not the date as well
-    no_date_in_headline = re.sub(r"^.*?/+", "", text, flags=re.MULTILINE)   # Remove date from the headlines
-    no_punctuation = re.sub(r"[.?\-\",!;'/:()\[\]\(\)&\n+\t+]", " ", no_date_in_headline, flags=re.MULTILINE)  # Remove punctuation
-    no_extra_spaces = re.sub(r"\s{2,}", " ", no_punctuation, flags=re.I)   #
-    tokenised = no_extra_spaces.lower().strip().split(' ')
-    return tokenised
-
-
-def remove_stop_words(words):
-    """Remove stop words
-    Args:
-        words (list): The list of tokenised words
-    Returns:
-        words (list): A list of words without the stop words included
-    """
-    words = list(filter(lambda x: x not in stop_words, words))
-    return words
-
-
-def normalise(words):
-    """Porter stemmer
-    Args:
-        words (TYPE): Description
-    Returns:
-        TYPE: Normalised list of prepeocessed words
-    """
-    return list([stem(word) for word in words])
-
-
 def preprocess(doc):
-    return normalise(remove_stop_words(tokenise(doc)))
+    return normalise(remove_stop_words(tokenise(doc), stop_words))
 
 
 def load_xml(xml_file, tag):
@@ -156,15 +119,12 @@ if __name__ == '__main__':
     token_doc_list = []
 
     for doc in root:
-        # Uncomment the following lines when using trec.sample.xml
-
+        # @TODO: Use the doc ID instead of the index of each doc in the array
         headline = doc.find('HEADLINE').text
         text = doc.find('TEXT').text
-        text = doc.find('TEXT').text
-        doc_list.append(headline)
-        doc_list.append(text)
-        token_doc_list.append(preprocess(headline))
-        token_doc_list.append(preprocess(text))
+        headline_with_text = headline + ' ' + text
+        doc_list.append(headline_with_text)
+        token_doc_list.append(preprocess(headline_with_text))
 
     # token_doc_list = token_doc_list[0: 20]
     inverted_index = positional_inverted_index(token_doc_list)
@@ -174,8 +134,7 @@ if __name__ == '__main__':
     # Create a term-document incident collection that shows which documents each term belongs to
     collection_table = create_term_doc_collection(inverted_index, len(doc_list))
 
-    # @TODO: Load the file with the queries and preprocess(?) them to remove the index
-    # queries = ['drink and pink', 'not pink and not ink', 'like or drink']
-    queries = ['greec and not portug']
+    # @TODO: Load the queries from the file
+    queries = ['greece AND portugal']
     boolean_search_res = boolean_search(collection_table, queries, token_doc_list)
     save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

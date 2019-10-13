@@ -55,15 +55,14 @@ def find_indices_of_word(doc_list, word):
     return indices_list
 
 
-def positional_inverted_index(token_doc_list):
+def positional_inverted_index(tokenised_docs):
     inverted_index = dict()
 
-    for index, token_doc_list in enumerate(token_doc_list):
+    for doc_no, token_doc_list in tokenised_docs.items():
         for word in token_doc_list:
             word_indices = find_indices_of_word(token_doc_list, word)
             doc_indices_dict = {}
-            doc_indices_dict[index + 1] = word_indices
-
+            doc_indices_dict[doc_no] = word_indices
             if word in inverted_index:
                 inverted_index[word].update(doc_indices_dict)
             else:
@@ -117,24 +116,31 @@ if __name__ == '__main__':
     root = load_xml(TREC_SAMPLE_FILE, './DOC')
     doc_list = []
     token_doc_list = []
+    tokenised_docs = {}
+    doc_nums = []
 
     for doc in root:
         # @TODO: Use the doc ID instead of the index of each doc in the array
+        doc_no = doc.find('DOCNO').text
         headline = doc.find('HEADLINE').text
         text = doc.find('TEXT').text
         headline_with_text = headline + ' ' + text
+
+        doc_nums.append(doc_no)
         doc_list.append(headline_with_text)
         token_doc_list.append(preprocess(headline_with_text))
+        tokenised_docs[doc_no] = preprocess(headline_with_text)
 
     # token_doc_list = token_doc_list[0: 20]
-    inverted_index = positional_inverted_index(token_doc_list)
+    inverted_index = positional_inverted_index(tokenised_docs)
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 
     # Create a term-document incident collection that shows which documents each term belongs to
-    collection_table = create_term_doc_collection(inverted_index, len(doc_list))
+    print(doc_nums)
+    collection_table = create_term_doc_collection(inverted_index, doc_nums)
 
     # @TODO: Load the queries from the file
     queries = ['greece AND portugal']
-    boolean_search_res = boolean_search(collection_table, queries, token_doc_list)
+    boolean_search_res = boolean_search(collection_table, inverted_index, queries, len(tokenised_docs))
     save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

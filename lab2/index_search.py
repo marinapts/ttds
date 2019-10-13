@@ -2,23 +2,38 @@ import numpy as np
 from preprocess import normalise, tokenise
 
 
-def create_term_doc_collection(inverted_index, num_of_docs):
-    words = [word for word in inverted_index]
+# def map_docs_number_to_index(docs, doc_nums):
+#     docs_ind = []
+
+#     for doc in docs:
+
+
+def create_term_doc_collection(inverted_index, doc_nums):
+    words = list(inverted_index.keys())
     collection_dict = dict()
-    boolean_vector = np.zeros((len(words), num_of_docs), dtype=np.bool)
+    boolean_matrix = np.zeros((len(words), len(doc_nums)), dtype=np.bool)
+
+    # Create an index of the doc numbers
+    doc_num_dict = {}
+    for ind, doc_num in enumerate(doc_nums):
+        doc_num_dict[doc_num] = ind
 
     for i, word in enumerate(words):
-        docs_with_word = inverted_index[word].keys()
+        docs_for_specific_word = list(inverted_index[word].keys())
+        # print(docs_for_specific_word)
 
-        for doc in docs_with_word:
-            boolean_vector[i][doc-1] = 1
+        for index, doc_num in enumerate(docs_for_specific_word):
+            doc_id = doc_num_dict[doc_num]
+            boolean_matrix[i][int(doc_id)] = True
 
-        collection_dict[word] = boolean_vector[i]
+        # print('\n', len(boolean_matrix[i]))
+        collection_dict[word] = boolean_matrix[i]
 
+    # print(collection_dict)
     return collection_dict
 
 
-def boolean_search(collection_dict, queries, token_doc_list):
+def boolean_search(collection_dict, queries, num_of_docs):
     logical_operators = {'and': '&', 'or': '|', 'not': '~'}
     results_boolean = []
 
@@ -35,19 +50,24 @@ def boolean_search(collection_dict, queries, token_doc_list):
             else:
                 if word not in collection_dict:
                     # Word isn't included in any of the documents
-                    collection_dict_False = np.zeros(len(token_doc_list), dtype=bool)
+                    collection_dict_False = np.zeros(num_of_docs, dtype=bool)
                     converted_query.append('np.%s' % repr(collection_dict_False))
                 else:
                     word_vector_str = ''
                     np.set_printoptions(threshold=np.prod(collection_dict[word].shape))
-                    for word in collection_dict[word]:
-                        word_vector_str += '%s, ' % (word)
+                    # print(collection_dict[word])
 
+                    for w in collection_dict[word]:
+                        # word_vector_str += '%s, ' % (w)
+                        word_vector_str += '{}, '.format(w)
+
+                    # print(word_vector_str)
                     converted_query.append('np.array([%s])' % word_vector_str)
 
         final_query = ' '.join(converted_query)
         boolean_vector = eval(final_query)
         documents = [i+1 for i in range(len(boolean_vector)) if boolean_vector[i] == True]
+        # print(documents)
 
         for doc in documents:
             results_boolean.append([index+1, 0, doc, 0, 1, 0])

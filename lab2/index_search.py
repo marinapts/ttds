@@ -2,40 +2,55 @@ import numpy as np
 from preprocess import normalise, tokenise
 
 
-# def map_docs_number_to_index(docs, doc_nums):
-#     docs_ind = []
-
-#     for doc in docs:
-
-
 def create_term_doc_collection(inverted_index, doc_nums):
+    """Create a term-document incident collection that shows which documents each term belongs to
+
+    Args:
+        inverted_index (dict): Description
+        doc_nums (list): Description
+
+    Returns:
+        collection_dict (dict): A boolean vector for each word
+    """
     words = list(inverted_index.keys())
     collection_dict = dict()
     boolean_matrix = np.zeros((len(words), len(doc_nums)), dtype=np.bool)
 
-    # Create an index of the doc numbers
+    # Create a mapping of document numbers to continuous indices
     doc_num_dict = {}
     for ind, doc_num in enumerate(doc_nums):
         doc_num_dict[doc_num] = ind
 
     for i, word in enumerate(words):
         docs_for_specific_word = list(inverted_index[word].keys())
-        # print(docs_for_specific_word)
 
         for index, doc_num in enumerate(docs_for_specific_word):
             doc_id = doc_num_dict[doc_num]
             boolean_matrix[i][int(doc_id)] = True
 
-        # print('\n', len(boolean_matrix[i]))
         collection_dict[word] = boolean_matrix[i]
 
-    # print(collection_dict)
     return collection_dict
 
 
-def boolean_search(collection_dict, queries, num_of_docs):
+def boolean_search(collection_dict, inverted_index, queries, doc_nums):
+    """Applies Boolean search
+
+    Args:
+        collection_dict (dict): Description
+        inverted_index (dict): Description
+        queries (list): Description
+        doc_nums (list): Description
+
+    Returns:
+        results_boolean (list): Results of the boolean search for each query
+    """
     logical_operators = {'and': '&', 'or': '|', 'not': '~'}
     results_boolean = []
+    doc_num_dict = {}
+
+    for ind, doc_num in enumerate(doc_nums):
+        doc_num_dict[ind] = doc_num
 
     # For each query find the related documents
     for index, query in enumerate(queries):
@@ -50,31 +65,24 @@ def boolean_search(collection_dict, queries, num_of_docs):
             else:
                 if word not in collection_dict:
                     # Word isn't included in any of the documents
-                    collection_dict_False = np.zeros(num_of_docs, dtype=bool)
+                    collection_dict_False = np.zeros(len(doc_nums), dtype=bool)
                     converted_query.append('np.%s' % repr(collection_dict_False))
                 else:
                     word_vector_str = ''
                     np.set_printoptions(threshold=np.prod(collection_dict[word].shape))
-                    # print(collection_dict[word])
 
                     for w in collection_dict[word]:
-                        # word_vector_str += '%s, ' % (w)
                         word_vector_str += '{}, '.format(w)
 
-                    # print(word_vector_str)
                     converted_query.append('np.array([%s])' % word_vector_str)
 
         final_query = ' '.join(converted_query)
         boolean_vector = eval(final_query)
-        documents = [i+1 for i in range(len(boolean_vector)) if boolean_vector[i] == True]
-        # print(documents)
+        documents = [doc_num_dict[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
 
         for doc in documents:
             results_boolean.append([index+1, 0, doc, 0, 1, 0])
 
-    # print('Boolean results: ', results_boolean)
-    for res in results_boolean:
-        print(res)
     return results_boolean
 
 

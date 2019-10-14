@@ -55,7 +55,7 @@ def find_indices_of_word(doc_list, word):
     return indices_list
 
 
-def positional_inverted_index(tokenised_docs):
+def create_inverted_index(tokenised_docs):
     inverted_index = dict()
 
     for doc_no, token_doc_list in tokenised_docs.items():
@@ -120,7 +120,6 @@ if __name__ == '__main__':
     doc_nums = []
 
     for doc in root:
-        # @TODO: Use the doc ID instead of the index of each doc in the array
         doc_no = doc.find('DOCNO').text
         headline = doc.find('HEADLINE').text
         text = doc.find('TEXT').text
@@ -131,16 +130,15 @@ if __name__ == '__main__':
         token_doc_list.append(preprocess(headline_with_text))
         tokenised_docs[doc_no] = preprocess(headline_with_text)
 
-    # token_doc_list = token_doc_list[0: 20]
-    inverted_index = positional_inverted_index(tokenised_docs)
+    inverted_index = create_inverted_index(tokenised_docs)
+    # @TODO: Load inverted index from file into memory
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 
     # Create a term-document incident collection that shows which documents each term belongs to
-    print(doc_nums)
     collection_table = create_term_doc_collection(inverted_index, doc_nums)
 
     # @TODO: Load the queries from the file
-    queries = ['greece AND portugal']
-    boolean_search_res = boolean_search(collection_table, inverted_index, queries, len(tokenised_docs))
+    queries = ['Scotland', 'Window', 'replacing', 'condemning', 'income OR taxes', 'income AND NOT taxes']
+    boolean_search_res = boolean_search(collection_table, inverted_index, queries, doc_nums)
     save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)

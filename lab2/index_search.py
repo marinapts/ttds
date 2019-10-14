@@ -33,12 +33,11 @@ def create_term_doc_collection(inverted_index, doc_nums):
     return collection_dict
 
 
-def boolean_search(collection_dict, inverted_index, queries, doc_nums):
+def boolean_search(collection_dict, queries, doc_nums):
     """Applies Boolean search
 
     Args:
         collection_dict (dict): Description
-        inverted_index (dict): Description
         queries (list): Description
         doc_nums (list): Description
 
@@ -81,7 +80,7 @@ def boolean_search(collection_dict, inverted_index, queries, doc_nums):
         documents = [doc_num_dict[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
 
         for doc in documents:
-            results_boolean.append([index+1, 0, doc, 0, 1, 0])
+            results_boolean.append([index + 1, 0, doc, 0, 1, 0])
 
     return results_boolean
 
@@ -92,3 +91,35 @@ def save_boolean_search_results(results_boolean, file_name):
         row_str = ' '.join(str(i) for i in row)
         f.write(row_str + '\n')
     f.close()
+
+
+def proximity_search(inverted_index, queries):
+    # #10(income, taxes)
+    for index, query in enumerate(queries):
+        query_list = normalise(tokenise(query))
+        proximity_number = int(query_list[0].replace('#', ''))
+        word_1 = query_list[1]
+        word_2 = query_list[2]
+
+        word_1_docs = inverted_index[word_1]
+        word_2_docs = inverted_index[word_2]
+
+        # Find common docs between the 2 words
+        common_docs = set(word_1_docs).intersection(word_2_docs)
+        docs_with_phrase = []
+
+        for doc in list(common_docs):
+            # Check the distance of the words
+            for i in word_2_docs[doc]:
+                for j in word_1_docs[doc]:
+                    # @TODO: Check if order matters for proximity search (not phrase search)
+                    distance_diff = int(i) - int(j)
+                    if distance_diff <= proximity_number and distance_diff > 0:
+                        docs_with_phrase.append(int(doc))
+
+        proximity_doc_results = []
+        for doc in sorted(set(docs_with_phrase)):
+            proximity_doc_results.append([index + 1, 0, doc, 0, 1, 0])
+
+        print(res for res in proximity_doc_results)
+        return proximity_doc_results

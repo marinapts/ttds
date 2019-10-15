@@ -9,9 +9,8 @@ def tokenise(text):
     Returns:
         tokenised (list): List of tokens
     """
-    # @TODO: Remove only FT, not the date as well
-    no_date_in_headline = re.sub(r"^.*?/+", "", text, flags=re.MULTILINE)   # Remove date from the headlines
-    no_punctuation = re.sub(r"[.?\-\",!;'/:()\[\]\(\)&\n+\t+]", " ", no_date_in_headline, flags=re.MULTILINE)  # Remove punctuation
+    no_FT_in_headline = re.sub(r"^FT\s{2}", "", text, flags=re.MULTILINE)   # Remove date from the headlines
+    no_punctuation = re.sub(r"[.?\-\",!;'/:()\*\%\[\]\(\)&\n+\t+]", " ", no_FT_in_headline, flags=re.MULTILINE)  # Remove punctuation
     no_extra_spaces = re.sub(r"\s{2,}", " ", no_punctuation, flags=re.I)   #
     tokenised = no_extra_spaces.lower().strip().split(' ')
     return tokenised

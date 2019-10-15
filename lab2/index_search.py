@@ -1,6 +1,7 @@
 import re
 import numpy as np
-from preprocess import normalise
+from preprocess import normalise, tokenise, remove_stop_words
+
 
 PHRASE_REGEX = re.compile(r'\"\w+(\s+)\w+\"')
 PROXIMITY_REGEX = re.compile(r'\#\d+\(.\w+\,(\s+).\w+\)')
@@ -10,8 +11,8 @@ def create_term_doc_collection(inverted_index, doc_nums):
     """Create a term-document incident collection that shows which documents each term belongs to
 
     Args:
-        inverted_index (dict): Description
-        doc_nums (list): Description
+        inverted_index (dict): Index of terms as keys and dict of documents with positions as values
+        doc_nums (list): An array of the documents numbers
 
     Returns:
         collection_dict (dict): A boolean vector for each word
@@ -78,6 +79,16 @@ def convert_doc_ids_to_boolean(doc_list, doc_nums):
     return boolean_doc_list
 
 
+def convert_booleans_to_docs_ids(bool_list, doc_nums):
+    doc_id_list = []
+
+    for index, boolean_val in enumerate(bool_list):
+        if boolean_val is True:
+            doc_id = doc_nums[index]
+            doc_id_list.append(doc_id)
+    return doc_id_list
+
+
 def boolean_search(query_str_transformed, doc_nums):
     # Map doc numbers to continuous indices
     doc_num_mapping = {}
@@ -101,6 +112,8 @@ def split_query(query):
     query = PHRASE_REGEX.sub(replace_space_with_underscore, query)
     # Removes space from the proximity search
     query = PROXIMITY_REGEX.sub(remove_space_from_proximity_search, query)
+
+    # @TODO: Remove stop words if not a logical operator
     return query.lower().split()
 
 
@@ -112,7 +125,7 @@ def array_to_string(arr):
     return array_str
 
 
-def search_queries(queries, collection_table, inverted_index, doc_nums):
+def boolean_search_queries(queries, collection_table, inverted_index, doc_nums):
     logical_operators_mapping = {'and': '&', 'or': '|', 'not': '~'}
     search_results = []
 
@@ -156,3 +169,59 @@ def save_boolean_search_results(results_boolean, queries, file_name):
             f.write(str(index + 1) + ' 0 ' + doc_id + ' 0 1 0\n')
     f.close()
     print('Boolean search results saved at {}.txt'.format(file_name))
+
+
+def ranked_retrieval(queries, collection_table, doc_nums, inverted_index, stop_words):
+    ranked_scores = {}
+
+    for query_index, query in enumerate(queries):
+        query_tokens = normalise(remove_stop_words(tokenise(query), stop_words))
+
+        # Convert query into an OR boolean search and use eval to evaluate it
+        boolean_vectors = []
+        for token in query_tokens:
+            boolean_vector = collection_table[token]
+            boolean_vectors.append('np.array([{}])'.format(array_to_string(boolean_vector)))
+
+        query_eval_string = ' | '.join(boolean_vectors)
+        query_documents = boolean_search(query_eval_string, doc_nums)
+
+        query_scores = []
+        # Map query_boolean_result to a list of document ids
+        for doc in query_documents:
+            score = TFIDF(query, doc, query_tokens, len(doc_nums), inverted_index)
+            query_scores.append((doc, score))
+
+        # Sort scores for each query on a descending order
+        query_scores = sorted(query_scores, key=lambda x: x[1], reverse=True)
+        ranked_scores[query_index + 1] = query_scores
+
+    return ranked_scores
+
+
+def TFIDF(query, document, terms, N, inverted_index):
+    total_score = 0
+
+    # For each term calculate the tf (term frequency in doc) and df (number of docs that word appeared in)
+    for term in terms:
+        # Check if the document includes the term
+        if document in inverted_index[term].keys():
+            # Frequency of term in this document
+            tf = len(inverted_index[term][document])
+            # Number of documents in which the term appeared
+            df = len(inverted_index[term].keys())
+            term_weight = (1 + np.log10(tf)) * np.log10(N / df)
+            total_score += term_weight
+
+    return total_score
+
+
+def save_ranked_retrieval_results(ranked_results, file_name):
+    f = open(file_name + '.txt', 'w+')
+
+    for query in ranked_results.keys():
+        for (doc, score) in ranked_results[query]:
+            printed_res = str(query) + ' 0 ' + doc + ' 0 ' + str(score) + ' 0 \n'
+            f.write(printed_res)
+    f.close()
+    print('Ranked search results saved at {}.txt'.format(file_name))

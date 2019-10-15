@@ -4,7 +4,7 @@ import pickle
 import xml.etree.ElementTree as ElementTree
 from collections import Counter
 from preprocess import tokenise, remove_stop_words, normalise
-from index_search import create_term_doc_collection, boolean_search, save_boolean_search_results, proximity_search
+from index_search import create_term_doc_collection, search_queries, save_boolean_search_results
 
 
 def download_file_and_save(url, file_name):
@@ -52,7 +52,7 @@ def get_word_indices_in_text(words, text):
 
 
 def find_indices_of_word(doc_list, word):
-    indices_list = [i+1 for i in range(len(doc_list)) if doc_list[i] == word]
+    indices_list = [i + 1 for i in range(len(doc_list)) if doc_list[i] == word]
     return indices_list
 
 
@@ -100,23 +100,37 @@ def load_file_binary(file_name):
         return pickle.load(f)
 
 
-if __name__ == '__main__':
-    STOP_WORDS_FILE = './data/stop_words.txt'
-    SAMPLE_FILE = './data/sample.xml'
-    TREC_SAMPLE_FILE = './data/trec.sample.xml'
-    INVERTED_INDEX_FILE = 'inverted_index'
-    RESULTS_BOOLEAN_FILE = 'results.boolean'
-    QUERIES_BOOLEAN = './data/queries.boolean.txt'
+def create_directory(directory):
+    if not os.path.isdir(directory):
+        os.makedirs(directory)
 
+
+if __name__ == '__main__':
+    # Directories
+    DATA_DIR = 'data'
+    RESULTS_DIR = 'results'
+    # Data files
+    STOP_WORDS_FILE = DATA_DIR + '/stop_words.txt'
+    SAMPLE_FILE = DATA_DIR + '/sample.xml'
+    TREC_SAMPLE_FILE = DATA_DIR + '/trec.sample.xml'
+    QUERIES_BOOLEAN = DATA_DIR + '/queries.boolean.txt'
+    # Results files
+    INVERTED_INDEX_FILE = RESULTS_DIR + '/inverted_index'
+    RESULTS_BOOLEAN_FILE = RESULTS_DIR + '/results.boolean'
+
+    create_directory(DATA_DIR)
+    create_directory(RESULTS_DIR)
+    # @TODO: Download xml files??
     download_file_and_save('http://members.unine.ch/jacques.savoy/clef/englishST.txt', STOP_WORDS_FILE)
+    # @TODO: Use new url for queries file
     download_file_and_save('http://www.inf.ed.ac.uk/teaching/courses/tts/labs/lab2/queries.lab2.txt', QUERIES_BOOLEAN)
 
-    # Save stop words in a list
+    # Save stop words and boolean queries
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
     with open(QUERIES_BOOLEAN) as queries_file:
-        queries_boolean = [query.split(': ')[1] for query in queries_file]
+        queries_boolean = [query.lower().split(': ')[1] for query in queries_file]
 
     # Load the provided trec sample xml
     root = load_xml(TREC_SAMPLE_FILE, './DOC')
@@ -144,16 +158,9 @@ if __name__ == '__main__':
     # Create a term-document incident collection that shows which documents each term belongs to
     collection_table = create_term_doc_collection(inverted_index, doc_nums)
 
-    # @TODO: Load the queries from the file
-    print(queries_boolean)
-    # @TODO: Call each search function depending on the query format -> to be implemented in index_search.py
-    # differentiate between phrase and proximity search -> call same function
-    # queries = ['Scotland', 'Window', 'replacing', 'condemning', 'income OR taxes', 'income AND NOT taxes']
-    queries = ['middle AND east']
-    boolean_search_res = boolean_search(collection_table, queries, doc_nums)
+    # print(queries_boolean)
+    results_boolean = []
+    logical_operators = ['and', 'or', 'not']
 
-    proximity_query = ['#10(income, taxes)']
-    proximity_search(inverted_index, proximity_query)
-
-    # @TODO: Save all searches to RESULTS_BOOLEAN_FILE
-    save_boolean_search_results(boolean_search_res, RESULTS_BOOLEAN_FILE)
+    search_results = search_queries(queries_boolean, collection_table, inverted_index, doc_nums)
+    save_boolean_search_results(search_results, queries_boolean, RESULTS_BOOLEAN_FILE)

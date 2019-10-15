@@ -1,5 +1,9 @@
+import re
 import numpy as np
-from preprocess import normalise, tokenise
+from preprocess import normalise
+
+PHRASE_REGEX = re.compile(r'\"\w+(\s+)\w+\"')
+PROXIMITY_REGEX = re.compile(r'\#\d+\(.\w+\,(\s+).\w+\)')
 
 
 def create_term_doc_collection(inverted_index, doc_nums):
@@ -33,93 +37,122 @@ def create_term_doc_collection(inverted_index, doc_nums):
     return collection_dict
 
 
-def boolean_search(collection_dict, queries, doc_nums):
-    """Applies Boolean search
-
-    Args:
-        collection_dict (dict): Description
-        queries (list): Description
-        doc_nums (list): Description
-
-    Returns:
-        results_boolean (list): Results of the boolean search for each query
+def phrase_proximity_search(terms, max_distance, keep_order, inverted_index, doc_nums):
+    """Common function for phrase and proximity search
     """
-    logical_operators = {'and': '&', 'or': '|', 'not': '~'}
-    results_boolean = []
-    doc_num_dict = {}
+    term_1_docs = inverted_index[terms[0]]
+    term_2_docs = inverted_index[terms[1]]
+
+    # Find common docs between the 2 words
+    common_docs = set(term_1_docs).intersection(term_2_docs)
+    common_docs_ids = []
+
+    for doc in list(common_docs):
+        # Check the distance between the words
+        for i in term_2_docs[doc]:
+            for j in term_1_docs[doc]:
+                distance_diff = int(i) - int(j)
+
+                if keep_order:
+                    # Order of words matters in phrase search so distance diff MUST be positive
+                    if distance_diff > 0 and distance_diff <= max_distance:
+                        common_docs_ids.append(int(doc))
+                else:
+                    # Order of words does not matter in proximity search and distance diff can be negative,
+                    # so we take its absolute value
+                    if abs(distance_diff) <= max_distance:
+                        common_docs_ids.append(int(doc))
+
+    common_docs_ids = sorted(set([int(i) for i in common_docs_ids]))
+    boolean_vector = convert_doc_ids_to_boolean(common_docs_ids, doc_nums)
+    return boolean_vector
+
+
+def convert_doc_ids_to_boolean(doc_list, doc_nums):
+    boolean_doc_list = np.zeros(len(doc_nums), dtype=np.bool)
+
+    for doc_id in doc_list:
+        doc_index = doc_nums.index(str(doc_id))
+        boolean_doc_list[doc_index] = True
+
+    return boolean_doc_list
+
+
+def boolean_search(query_str_transformed, doc_nums):
+    # Map doc numbers to continuous indices
+    doc_num_mapping = {}
 
     for ind, doc_num in enumerate(doc_nums):
-        doc_num_dict[ind] = doc_num
+        doc_num_mapping[ind] = doc_num
 
-    # For each query find the related documents
-    for index, query in enumerate(queries):
-        # Preprocess the query string
-        query_list = normalise(tokenise(query))
-        converted_query = []
+    boolean_vector = eval(query_str_transformed)
+    documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
+    return documents
 
-        # Convert each word except for the logical operators to a binary number
-        for word in query_list:
-            if word in logical_operators.keys():
-                converted_query.append(logical_operators[word])
+
+def split_query(query):
+    def replace_space_with_underscore(match):
+        return match.group(0).replace(' ', '_')
+
+    def remove_space_from_proximity_search(match):
+        return match.group(0).replace(' ', '')
+
+    # Replaces spaces from inside quotes with underscore
+    query = PHRASE_REGEX.sub(replace_space_with_underscore, query)
+    # Removes space from the proximity search
+    query = PROXIMITY_REGEX.sub(remove_space_from_proximity_search, query)
+    return query.lower().split()
+
+
+def array_to_string(arr):
+    array_str = ''
+
+    for i in arr:
+        array_str += '{}, '.format(i)
+    return array_str
+
+
+def search_queries(queries, collection_table, inverted_index, doc_nums):
+    logical_operators_mapping = {'and': '&', 'or': '|', 'not': '~'}
+    search_results = []
+
+    for query in queries:
+        query_tokens = split_query(query)
+        query_eval_string = ''
+
+        for token in query_tokens:
+            if token.startswith('#'):   # Proximity search
+                # Split phrase into distance and terms
+                distance, term_1, term_2 = list(filter(None, re.split(r'\W+', token)))
+                terms = normalise([term_1, term_2])
+                boolean_vector = phrase_proximity_search(terms, int(distance), False, inverted_index, doc_nums)
+                query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))
+
+            elif token.startswith('"'):    # Phrase search
+                terms = normalise(token.replace('_', ' ').replace('"', '').split())
+                boolean_vector = phrase_proximity_search(terms, 1, True, inverted_index, doc_nums)
+                query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))
+
+            elif token in logical_operators_mapping:    # One of AND, OR, NOT
+                token = logical_operators_mapping[token]
+                query_eval_string += '{} '.format(token)
+
             else:
-                if word not in collection_dict:
-                    # Word isn't included in any of the documents
-                    collection_dict_False = np.zeros(len(doc_nums), dtype=bool)
-                    converted_query.append('np.%s' % repr(collection_dict_False))
-                else:
-                    word_vector_str = ''
-                    np.set_printoptions(threshold=np.prod(collection_dict[word].shape))
+                normalised_word = normalise([token])[0]
+                boolean_vector = collection_table[normalised_word]
+                query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))
 
-                    for w in collection_dict[word]:
-                        word_vector_str += '{}, '.format(w)
+        query_search_results = boolean_search(query_eval_string, doc_nums)
+        search_results.append(query_search_results)
 
-                    converted_query.append('np.array([%s])' % word_vector_str)
-
-        final_query = ' '.join(converted_query)
-        boolean_vector = eval(final_query)
-        documents = [doc_num_dict[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
-
-        for doc in documents:
-            results_boolean.append([index + 1, 0, doc, 0, 1, 0])
-
-    return results_boolean
+    return search_results
 
 
-def save_boolean_search_results(results_boolean, file_name):
+def save_boolean_search_results(results_boolean, queries, file_name):
     f = open(file_name + '.txt', 'w+')
-    for row in results_boolean:
-        row_str = ' '.join(str(i) for i in row)
-        f.write(row_str + '\n')
-    f.close()
 
-
-def proximity_search(inverted_index, queries):
-    # #10(income, taxes)
     for index, query in enumerate(queries):
-        query_list = normalise(tokenise(query))
-        proximity_number = int(query_list[0].replace('#', ''))
-        word_1 = query_list[1]
-        word_2 = query_list[2]
-
-        word_1_docs = inverted_index[word_1]
-        word_2_docs = inverted_index[word_2]
-
-        # Find common docs between the 2 words
-        common_docs = set(word_1_docs).intersection(word_2_docs)
-        docs_with_phrase = []
-
-        for doc in list(common_docs):
-            # Check the distance of the words
-            for i in word_2_docs[doc]:
-                for j in word_1_docs[doc]:
-                    # @TODO: Check if order matters for proximity search (not phrase search)
-                    distance_diff = int(i) - int(j)
-                    if distance_diff <= proximity_number and distance_diff > 0:
-                        docs_with_phrase.append(int(doc))
-
-        proximity_doc_results = []
-        for doc in sorted(set(docs_with_phrase)):
-            proximity_doc_results.append([index + 1, 0, doc, 0, 1, 0])
-
-        print(res for res in proximity_doc_results)
-        return proximity_doc_results
+        for doc_id in results_boolean[index]:
+            f.write(str(index + 1) + ' 0 ' + doc_id + ' 0 1 0\n')
+    f.close()
+    print('Boolean search results saved at {}.txt'.format(file_name))

@@ -31,8 +31,8 @@ def remove_stop_words(words, stop_words):
 def normalise(words):
     """Porter stemmer
     Args:
-        words (TYPE): Description
+        words (list): Description
     Returns:
-        TYPE: Normalised list of prepeocessed words
+        (list): Normalised list of prepeocessed words
     """
     return list([stem(word) for word in words])

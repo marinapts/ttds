@@ -221,7 +221,7 @@ def save_ranked_retrieval_results(ranked_results, file_name):
 
     for query in ranked_results.keys():
         for (doc, score) in ranked_results[query]:
-            printed_res = str(query) + ' 0 ' + doc + ' 0 ' + str(score) + ' 0 \n'
+            printed_res = str(query) + ' 0 ' + doc + ' 0 ' + '%.4f' % score + ' 0 \n'
             f.write(printed_res)
     f.close()
     print('Ranked search results saved at {}.txt'.format(file_name))

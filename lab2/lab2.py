@@ -2,6 +2,7 @@ import urllib.request
 import os.path
 import pickle
 import xml.etree.ElementTree as ElementTree
+import ast
 from collections import Counter
 from preprocess import tokenise, remove_stop_words, normalise
 from index_search import create_term_doc_collection, boolean_search_queries, save_boolean_search_results, ranked_retrieval, save_ranked_retrieval_results
@@ -70,7 +71,9 @@ def create_inverted_index(tokenised_docs):
             else:
                 inverted_index.setdefault(word, doc_indices_dict)
 
-    return inverted_index
+    # return inverted_index
+    save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
+    save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 
 
 def save_inverted_index_txt(inverted_index, file_name):
@@ -143,6 +146,7 @@ if __name__ == '__main__':
     token_doc_list = []
     tokenised_docs = {}
     doc_nums = []
+    test_list = []
 
     for doc in root:
         doc_no = doc.find('DOCNO').text
@@ -152,13 +156,15 @@ if __name__ == '__main__':
 
         doc_nums.append(doc_no)
         doc_list.append(headline_with_text)
+        test_list.append(tokenise(headline_with_text))
         token_doc_list.append(preprocess(headline_with_text))
         tokenised_docs[doc_no] = preprocess(headline_with_text)
 
-    inverted_index = create_inverted_index(tokenised_docs)
+    create_inverted_index(tokenised_docs)
     # @TODO: Load inverted index from file into memory
-    save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
-    save_file_binary(inverted_index, INVERTED_INDEX_FILE)
+    # save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
+    inverted_index = load_file_binary('./results/inverted_index')
+    print(inverted_index)
 
     # Create a term-document incident collection that shows which documents each term belongs to
     collection_table = create_term_doc_collection(inverted_index, doc_nums)

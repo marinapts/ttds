@@ -9,11 +9,9 @@ PROXIMITY_REGEX = re.compile(r'\#\d+\(.\w+\,(\s+).\w+\)')
 
 def create_term_doc_collection(inverted_index, doc_nums):
     """Create a term-document incident collection that shows which documents each term belongs to
-
     Args:
         inverted_index (dict): Index of terms as keys and dict of documents with positions as values
         doc_nums (list): An array of the documents numbers
-
     Returns:
         collection_dict (dict): A boolean vector for each word
     """
@@ -21,7 +19,7 @@ def create_term_doc_collection(inverted_index, doc_nums):
     collection_dict = dict()
     boolean_matrix = np.zeros((len(words), len(doc_nums)), dtype=np.bool)
 
-    # Create a mapping of document numbers to continuous indices
+    # Create a mapping of document numbers to continuous indices from 0 to len(doc_nums)-1
     doc_num_dict = {}
     for ind, doc_num in enumerate(doc_nums):
         doc_num_dict[doc_num] = ind
@@ -39,7 +37,15 @@ def create_term_doc_collection(inverted_index, doc_nums):
 
 
 def phrase_proximity_search(terms, max_distance, keep_order, inverted_index, doc_nums):
-    """Common function for phrase and proximity search
+    """Common function for phrase and proximity search. We treat the phrase search as a proximity search with distance 1
+    Args:
+        terms (list): Description
+        max_distance (int): The distance of the words indicated by the number after the # in the query
+        keep_order (boolean): If True, it's a phrase search (where order matters) otherwise it's a proximity search
+        inverted_index (dict)
+        doc_nums (list)
+    Returns:
+        boolean_vector (list): A list of True and False for each document
     """
     term_1_docs = inverted_index[terms[0]]
     term_2_docs = inverted_index[terms[1]]
@@ -70,6 +76,14 @@ def phrase_proximity_search(terms, max_distance, keep_order, inverted_index, doc
 
 
 def convert_doc_ids_to_boolean(doc_list, doc_nums):
+    """Converts a list of document ids into a list of boolean values for each document, which indicates the existance
+    of a search result in each dicument
+    Args:
+        doc_list (list)
+        doc_nums (list)
+    Returns:
+        boolean_doc_list (list)
+    """
     boolean_doc_list = np.zeros(len(doc_nums), dtype=np.bool)
 
     for doc_id in doc_list:
@@ -80,6 +94,13 @@ def convert_doc_ids_to_boolean(doc_list, doc_nums):
 
 
 def convert_booleans_to_docs_ids(bool_list, doc_nums):
+    """The opposite of the function convert_doc_ids_to_boolean. It converts a list of boolean values to a list of document ids
+    Args:
+        bool_list (list)
+        doc_nums (list)
+    Returns:
+        doc_id_list (list)
+    """
     doc_id_list = []
 
     for index, boolean_val in enumerate(bool_list):
@@ -90,12 +111,19 @@ def convert_booleans_to_docs_ids(bool_list, doc_nums):
 
 
 def boolean_search(query_str_transformed, doc_nums):
-    # Map doc numbers to continuous indices
-    doc_num_mapping = {}
+    """Performs boolean search for one or more combinations of terms.
+    Args:
+        query_str_transformed (str): A string representation of the AND, OR and NOT used between numpy arrays
+        doc_nums (list)
+    Returns:
+        documents (list): The resulting documents of the boolean search
+    """
+    doc_num_mapping = {}  # Map doc numbers to continuous indices
 
     for ind, doc_num in enumerate(doc_nums):
         doc_num_mapping[ind] = doc_num
 
+    # Use eval to evaluate the boolean search
     boolean_vector = eval(query_str_transformed)
     documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
     return documents
@@ -126,6 +154,15 @@ def array_to_string(arr):
 
 
 def boolean_search_queries(queries, collection_table, inverted_index, doc_nums):
+    """Performs boolean, phrase or proximity search for a given set of queries
+    Args:
+        queries (list): Preprocessed queries
+        collection_table (dict)
+        inverted_index (dict)
+        doc_nums (list)
+    Returns:
+        search_results (list): The resultsing documents for each search query
+    """
     print('Starting boolean search...')
     logical_operators_mapping = {'and': '&', 'or': '|', 'not': '~'}
     search_results = []
@@ -162,7 +199,13 @@ def boolean_search_queries(queries, collection_table, inverted_index, doc_nums):
     return search_results
 
 
-def save_boolean_search_results(results_boolean, queries, file_name):
+def save_boolean_search_results(queries, results_boolean, file_name):
+    """Saves the results for the boolean search queries in the provided file_name
+    Args:
+        queries (list): Queries from queries.boolean.txt
+        results_boolean (list)
+        file_name (str): queries.boolean.txt
+    """
     f = open(file_name + '.txt', 'w+')
 
     for index, query in enumerate(queries):
@@ -173,6 +216,16 @@ def save_boolean_search_results(results_boolean, queries, file_name):
 
 
 def ranked_retrieval(queries, collection_table, doc_nums, inverted_index, stop_words):
+    """Performs ranked IR based on TFIDF
+    Args:
+        queries (list): Queries from queries.ranked.txt
+        collection_table (dict)
+        doc_nums (list)
+        inverted_index (dict)
+        stop_words (list)
+    Returns:
+        ranked_scores (list): The resultsing documents and the score for each ranked query
+    """
     print('Starting ranked retrieval...')
     ranked_scores = {}
 
@@ -200,6 +253,15 @@ def ranked_retrieval(queries, collection_table, doc_nums, inverted_index, stop_w
 
 
 def TFIDF(document, terms, N, inverted_index):
+    """Calculates the retrieval score using the TFIDF (term frequency - inverse document frequency) formula
+    Args:
+        document (str)
+        terms (list)
+        N (list): Total number of documents
+        inverted_index (dict)
+    Returns:
+        total_score (float): Retrieval score for a query and a document
+    """
     total_score = 0
 
     # For each term calculate the tf (term frequency in doc) and df (number of docs that word appeared in)
@@ -217,13 +279,16 @@ def TFIDF(document, terms, N, inverted_index):
 
 
 def save_ranked_retrieval_results(ranked_results, file_name):
-    # @TODO: Print max 1000 results for each query
+    """Saves the results for the ranked queries in the provided file_name
+    Args:
+        ranked_results (list)
+        file_name (str)
+    """
     f = open(file_name + '.txt', 'w+')
 
     for query in ranked_results.keys():
         for index, (doc, score) in enumerate(ranked_results[query]):
             if index < 1000:
-                # print(query, index)
                 printed_res = str(query) + ' 0 ' + doc + ' 0 ' + '%.4f' % score + ' 0 \n'
                 f.write(printed_res)
     f.close()

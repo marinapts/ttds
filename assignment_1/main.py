@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     # Boolean, phrase and proximity search
     boolean_search_results = boolean_search_queries(queries_boolean, collection_table, inverted_index, doc_nums)
-    save_boolean_search_results(boolean_search_results, queries_boolean, RESULTS_BOOLEAN_FILE)
+    save_boolean_search_results(queries_boolean, boolean_search_results, RESULTS_BOOLEAN_FILE)
 
     # Ranked search
     ranked_retrieval_results = ranked_retrieval(queries_ranked, collection_table, doc_nums, inverted_index, stop_words)

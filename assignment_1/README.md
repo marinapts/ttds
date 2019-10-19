@@ -3,6 +3,7 @@
 
 ### System Requirements
 This project is written in Python and requires Python 3 to be installed.
+My environment uses Python 3.7.3.
 We create a [virtual environment](https://docs.python.org/3/tutorial/venv.html) so that the versions of the packages that are used are consistent across all machines.
 
 Create the virtual environment using the *venv* command, which creates the hidden directory *.env*. Activate it and install the packages from requirements.txt.

@@ -57,6 +57,10 @@ def find_indices_of_word(doc_list, word):
 
 
 def create_inverted_index(tokenised_docs):
+    """Creates the positional inverted incdex from a list of tokenised documents
+    Args:
+        tokenised_docs (dict): Tokenised documents for each document number
+    """
     print('Create inverted index...')
     inverted_index = dict()
 
@@ -70,7 +74,7 @@ def create_inverted_index(tokenised_docs):
             else:
                 inverted_index.setdefault(word, doc_indices_dict)
 
-    # Save txt file in the required format and binary file
+    # Save inverted index in txt file in the required format and binary file
     save_inverted_index_txt(inverted_index, INVERTED_INDEX_FILE)
     save_file_binary(inverted_index, INVERTED_INDEX_FILE)
 

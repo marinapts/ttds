@@ -125,7 +125,7 @@ def boolean_search(query_str_transformed, doc_nums):
 
     # Use eval to evaluate the boolean search
     boolean_vector = eval(query_str_transformed)
-    documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
+    documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] is True]
     return documents
 
 
@@ -172,23 +172,23 @@ def boolean_search_queries(queries, collection_table, inverted_index, doc_nums):
         query_eval_string = ''
 
         for token in query_tokens:
-            if token.startswith('#'):   # Proximity search
+            if token.startswith('#'):  # Proximity search
                 # Split phrase into distance and terms
                 distance, term_1, term_2 = list(filter(None, re.split(r'\W+', token)))
                 terms = stemming([term_1, term_2])
                 boolean_vector = phrase_proximity_search(terms, int(distance), False, inverted_index, doc_nums)
                 query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))
 
-            elif token.startswith('"'):    # Phrase search
+            elif token.startswith('"'):  # Phrase search - we treat it as phrase search with distance 1
                 terms = stemming(token.replace('_', ' ').replace('"', '').split())
                 boolean_vector = phrase_proximity_search(terms, 1, True, inverted_index, doc_nums)
                 query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))
 
-            elif token in logical_operators_mapping:    # One of AND, OR, NOT
+            elif token in logical_operators_mapping:    # One of AND, OR, NOT -> boolean search
                 token = logical_operators_mapping[token]
                 query_eval_string += '{} '.format(token)
 
-            else:
+            else:  # Query contains a combination of queries
                 stem_word = stemming([token])[0]
                 boolean_vector = collection_table[stem_word]
                 query_eval_string += 'np.array([{}]) '.format(array_to_string(boolean_vector))

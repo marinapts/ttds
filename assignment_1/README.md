@@ -1,5 +1,7 @@
 # Text Technologies for Data Science
 ## Coursework 1
+https://www.inf.ed.ac.uk/teaching/courses/tts/CW/assignment1.html
+
 
 ### System Requirements
 This project is written in Python and requires Python 3 to be installed.

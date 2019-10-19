@@ -125,7 +125,7 @@ def boolean_search(query_str_transformed, doc_nums):
 
     # Use eval to evaluate the boolean search
     boolean_vector = eval(query_str_transformed)
-    documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] is True]
+    documents = [doc_num_mapping[i] for i in range(len(boolean_vector)) if boolean_vector[i] == True]
     return documents
 
 
@@ -292,4 +292,4 @@ def save_ranked_retrieval_results(ranked_results, file_name):
                 printed_res = str(query) + ' 0 ' + doc + ' 0 ' + '%.4f' % score + ' 0 \n'
                 f.write(printed_res)
     f.close()
-    print('Ranked search results saved at {}.txt\n'.format(file_name))
+    print('Ranked search results saved at {}.txt'.format(file_name))

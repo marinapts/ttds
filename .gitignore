@@ -3,3 +3,4 @@ lab0/*.txt
 lab1/*.txt
 lab1/.gz
 tts1/
+__pycache__/

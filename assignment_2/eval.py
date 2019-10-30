@@ -1,27 +1,35 @@
 
 
-def precision_cutoff_10():
+def precision(retrieved, relevant):
     """precision at cutoff 10 (only top 10 retrieved documents in the list are considered for each query)"""
-    pass
+    retrieved_and_relevant = list(set(retrieved).intersection(relevant))
+    precision = len(retrieved_and_relevant) / len(retrieved)
+    return precision
 
 
-def recall_cutoff_50():
+def recall(retrieved, relevant):
     """recall at cutoff 50"""
-    pass
+    retrieved_and_relevant = list(set(retrieved).intersection(relevant))
+    recall = len(retrieved_and_relevant) / len(relevant)
+    return recall
 
 
-def r_precision():
-    pass
+def avg_precision(all_retrieved, relevant):
+    ap = 0
+
+    for k in range(1, len(all_retrieved)):
+
+        if list(all_retrieved.keys())[k] in relevant:
+            k_retrieved = {c: all_retrieved[c] for c in list(all_retrieved.keys())[:k]}
+            precision_k = precision(list(k_retrieved.keys()), relevant)
+            ap += precision_k * 1
+        else:
+            ap += 0
+
+    return ap / len(relevant)
 
 
-def map():
-    """mean average precision over all the retrieved results"""
-    pass
+def nDCG(k, retrieved, relevant):
+    '''normalized discount cumulative gain at cutoff k'''
 
-
-def nDCG_10():
-    pass
-
-
-def nDCG_20():
-    pass
+    print(retrieved)

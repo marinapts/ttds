@@ -2,11 +2,10 @@ import re
 
 
 def preprocess_tweet(tweet):
-    # emoji_re = re.compile(ur'[\ux85]+', re.UNICODE)
-    # Remove link from tweet
+    # Remove links, unicode characters and extra spaces from tweet
     reg_1 = r'http\S+'
     reg_2 = r'[\x85]'
-    reg_3 = r'(^FT\s{2})|([^\w\s\#\@])'
+    reg_3 = r'[^\w\s\#\@]'
     reg_4 = r'\s+'
 
     tweet = re.sub(reg_1, '', tweet, flags=re.MULTILINE)
@@ -50,17 +49,23 @@ def load_dataset(dataset_type):
     return tweets_dict, unique_words
 
 
-def create_feature_vector(tweets_dict, unique_words, class_ids, dataset_type):
+def create_feature_vector_file(tweets_dict, unique_words, class_ids, dataset_type):
     with open('./results/feats.' + dataset_type, 'w') as f:
         for tweet_id in tweets_dict:
             words, category = tweets_dict[tweet_id]
-            feature_vector = [unique_words.index(w) + 1 for w in words]
+            feature_vector = []
+
+            for w in words:
+                if w in unique_words:
+                    feature_vector.append(unique_words.index(w) + 1)
+            # feature_vector = [unique_words.index(w) + 1 for w in words]
             f.write(class_ids[category])
 
-            for word_id in feature_vector:
+            for word_id in sorted(list(set(feature_vector))):
                 f.write(' ' + str(word_id) + ':' + '1')
 
             f.write(' #' + tweet_id + '\n')
+        print('File ./results/feats.' + dataset_type, 'created')
 
 
 if __name__ == '__main__':
@@ -74,5 +79,5 @@ if __name__ == '__main__':
     #         f.write(str(idx + 1) + ' ' + word + '\n')
 
     # Create feature vectors for training and test set
-    create_feature_vector(tweets_dict_train, unique_words_train, class_ids, 'train')
-    create_feature_vector(tweets_dict_test, unique_words_test, class_ids, 'test')
+    create_feature_vector_file(tweets_dict_train, unique_words_train, class_ids, 'train')
+    create_feature_vector_file(tweets_dict_test, unique_words_train, class_ids, 'test')

@@ -48,17 +48,19 @@ def first_n_retrieved(all_retrieved, n):
     return first_10_docs_retrieved
 
 
-def write_scores_to_file(filename, scores, write_avg):
+def write_scores_to_file(filename, scores, all_systems):
     with open('./eval_results/' + filename + '.eval', 'w') as f:
         column_names = ['P@10', 'R@50', 'r-Precision', 'AP', 'nDCG@10', 'nDCG@20']
         f.write('\t' + '\t'.join(column_names) + '\n')
 
         for idx, score in enumerate(scores):
-            ids_col = 'S' + str(idx + 1) if write_avg is True else str(idx + 1)
+            ids_col = 'S' + str(idx + 1) if all_systems is True else str(idx + 1)
             f.write(ids_col + '\t')
             f.write('\t'.join(format(x, ".3f") for x in score))
             f.write('\n')
-        f.write('mean\t' + '\t'.join(format(x, ".3f") for x in np.mean(scores, axis=0)))
+
+        if all_systems is False:
+            f.write('mean\t' + '\t'.join(format(x, ".3f") for x in np.mean(scores, axis=0)))
 
 
 if __name__ == '__main__':

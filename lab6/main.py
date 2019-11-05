@@ -1,5 +1,7 @@
 import re
+import requests
 from stemming.porter2 import stem
+from bs4 import BeautifulSoup
 
 
 def remove_stop_words(words, stop_words):
@@ -23,6 +25,27 @@ def stemming(words):
     return list([stem(word) for word in words])
 
 
+def get_title_from_link(links, tweet):
+    ignore_urls = ['http://t.co/foXvuGfnaN', 'http://t.co/3aKDXDk4Vh']
+    for link in links:
+        try:
+            if link not in ignore_urls:
+                response = requests.get(link, timeout=None)
+
+                print('ori', tweet)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    title = getattr(soup.title, 'string', '')
+                    tweet = tweet.replace(link, title)
+                    print('new', tweet.replace(link, title))
+                    print('\n')
+                else:
+                    print('.....................Not found............................................')
+        except:
+            print('.....................Not found............................................')
+    return tweet
+
+
 def preprocess_tweet(tweet):
     # Remove links, unicode characters and extra spaces from tweet
     reg_1 = r'http\S+'
@@ -30,6 +53,10 @@ def preprocess_tweet(tweet):
     reg_3 = r'(RT\s{1})|([^\w\s\#\@])'
     reg_3 = r'[^\w\s\#\@]'
     reg_4 = r'\s+'
+
+    # Replace links with titles
+    links = re.findall(reg_1, tweet)
+    # tweet = get_title_from_link(links, tweet)
 
     tweet = re.sub(reg_1, '', tweet, flags=re.MULTILINE)  # Remove links
     tweet = re.sub(reg_2, '', tweet, flags=re.MULTILINE)  # Remove unicode character
@@ -64,6 +91,8 @@ def load_dataset(dataset_type, stop_words):
         lines = f.readlines()
         tweets_dict = dict()
         tweet_words = []  # all tweet words
+        tweets_with_no_links = []
+        ids = []
 
         if '\n' in lines:
             lines.remove('\n')
@@ -71,13 +100,26 @@ def load_dataset(dataset_type, stop_words):
         for line in lines:
             line = line.strip().split('\t')
             tweet_id, tweet, target = line
+
+            links_in_tweet = re.findall(r'http\S+', tweet)
+            tweet = get_title_from_link(links_in_tweet, tweet)
+            tweets_with_no_links.append([tweet_id, tweet, target])
+
             preprocessed_tweet = preprocess_tweet(tweet)
             tweets_dict[tweet_id] = tuple([preprocessed_tweet, target])
             tweet_words.extend(preprocessed_tweet)
+            ids.append(tweet_id)
+            if tweet_id == '45138968053405286':
+                break
+
+    with open('./tweetsclassification/Tweets_new.' + dataset_type, 'w') as f:
+        for tweet_row in tweets_with_no_links:
+            f.write('\t'.join(tweet_row))
+            f.write('\n')
 
     # Remove duplicates
     unique_words = list(set(tweet_words))
-    return tweets_dict, unique_words
+    return tweets_dict, unique_words, ids
 
 
 def create_feature_vector_file(tweets_dict, unique_words, class_ids, dataset_type):
@@ -105,8 +147,8 @@ if __name__ == '__main__':
         stop_words = [word.strip() for word in file]
 
     class_ids = map_classes_to_ids()
-    tweets_dict_train, unique_words_train = load_dataset('train', stop_words)
-    tweets_dict_test, _ = load_dataset('test', stop_words)
+    tweets_dict_train, unique_words_train, ids_train = load_dataset('train', stop_words)
+    tweets_dict_test, _, ids_test = load_dataset('test', stop_words)
 
     # Print words with unique id in a file
     with open('./results/feats.dic', 'w') as f:

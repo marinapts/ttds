@@ -109,8 +109,6 @@ def load_dataset(dataset_type, stop_words):
             tweets_dict[tweet_id] = tuple([preprocessed_tweet, target])
             tweet_words.extend(preprocessed_tweet)
             ids.append(tweet_id)
-            if tweet_id == '45138968053405286':
-                break
 
     with open('./tweetsclassification/Tweets_new.' + dataset_type, 'w') as f:
         for tweet_row in tweets_with_no_links:

@@ -48,13 +48,14 @@ def first_n_retrieved(all_retrieved, n):
     return first_10_docs_retrieved
 
 
-def write_scores_to_file(filename, scores):
+def write_scores_to_file(filename, scores, write_avg):
     with open('./eval_results/' + filename + '.eval', 'w') as f:
         column_names = ['P@10', 'R@50', 'r-Precision', 'AP', 'nDCG@10', 'nDCG@20']
         f.write('\t' + '\t'.join(column_names) + '\n')
 
         for idx, score in enumerate(scores):
-            f.write(str(idx + 1) + '\t')
+            ids_col = 'S' + str(idx + 1) if write_avg is True else str(idx + 1)
+            f.write(ids_col + '\t')
             f.write('\t'.join(format(x, ".3f") for x in score))
             f.write('\n')
         f.write('mean\t' + '\t'.join(format(x, ".3f") for x in np.mean(scores, axis=0)))
@@ -62,10 +63,11 @@ def write_scores_to_file(filename, scores):
 
 if __name__ == '__main__':
     system_files = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6']
+    relevant_docs_dict = get_relative_docs('./systems/qrels.txt')
+    avg_scores_for_systems = []
 
     for system_file in system_files:
         retrieved_docs = get_system_file('./systems/' + system_file + '.results')
-        relevant_docs_dict = get_relative_docs('./systems/qrels.txt')
 
         avg_precisions = []
         scores = []
@@ -97,4 +99,8 @@ if __name__ == '__main__':
         print('MAP:', sum(avg_precisions) / len(retrieved_docs))
 
         scores = np.array(scores)
-        write_scores_to_file(system_file, scores)
+        write_scores_to_file(system_file, scores, False)
+        avg_scores_for_systems.append(np.mean(scores, axis=0))
+
+    print(avg_scores_for_systems)
+    write_scores_to_file('All', avg_scores_for_systems, True)

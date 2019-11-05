@@ -2,7 +2,7 @@ import numpy as np
 
 
 def precision(retrieved, relevant):
-    """precision at cutoff ` (only top 10 retrieved documents in the list are considered for each query)"""
+    """precision at cutoff 10 (only top 10 retrieved documents in the list are considered for each query)"""
     retrieved_and_relevant = list(set(retrieved).intersection(relevant))
     precision = len(retrieved_and_relevant) / len(retrieved)
     return precision
@@ -44,8 +44,7 @@ def nDCG(retrieved, relevant):
     irel1 = int(relevant[0][1])
     iDCG = irel1
     # print('irel1', iDCG)
-    for idx, (doc, rel) in enumerate(relevant[1:]):
+    for idx, (doc, rel) in enumerate(relevant[1:len(retrieved)]):
         iDCG += int(rel) / np.log2(int(idx) + 2)
-        # print(iDCG)
 
     return DCG / iDCG

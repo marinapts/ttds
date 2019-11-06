@@ -6,7 +6,13 @@ from scipy import stats
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 
-def get_system_file(filename):
+def get_retrieved_docs_for_system_file(filename):
+    """Gets the retrieved docs for the provided system file
+    Args:
+        filename (string): The path of the system file
+    Returns:
+        retrieved_docs (dict): A dictionaty of the retrieved docs
+    """
     with open(filename, 'r') as f:
         lines = f.readlines()
         retrieved_docs = dict()
@@ -23,6 +29,12 @@ def get_system_file(filename):
 
 
 def get_relative_docs(filename):
+    """Gets the relative docs for each query
+    Args:
+        filename (string): The path of the relative docs file
+    Returns:
+        relevant_docs_dict (dict): A dictionary of the relevant docs
+    """
     with open(filename, 'r') as qrels_f:
         lines = qrels_f.readlines()
         relevant_docs_dict = dict()
@@ -36,7 +48,7 @@ def get_relative_docs(filename):
             for doc in relev_docs:
                 if ',' in doc:
                     relev_docs_list.append(tuple(doc.split(',')))
-            # doc_id,
+
             if query_id in relevant_docs_dict:
                 relevant_docs_dict[query_id].update({relev_docs_list})
             else:
@@ -45,11 +57,23 @@ def get_relative_docs(filename):
 
 
 def first_n_retrieved(all_retrieved, n):
-    first_10_docs_retrieved = {k: all_retrieved[k] for k in list(all_retrieved.keys())[:n]}
-    return first_10_docs_retrieved
+    """Return the first n retrieved documents
+    Args:
+        all_retrieved (dict): The dictionary of retrieved docs
+        n (int): The number of documents to be returned
+    Returns:
+        (dict)
+    """
+    return {k: all_retrieved[k] for k in list(all_retrieved.keys())[:n]}
 
 
 def write_scores_to_file(filename, scores, all_systems):
+    """Writes the evaluation scores to the provided file
+    Args:
+        filename (string): The files to write the scores
+        scores (list): List of scores
+        all_systems (bool): If true, the scores files for all systems will be created
+    """
     with open('./eval_results/' + filename + '.eval', 'w') as f:
         column_names = ['P@10', 'R@50', 'r-Precision', 'AP', 'nDCG@10', 'nDCG@20']
         f.write('\t' + '\t'.join(column_names) + '\n')
@@ -76,6 +100,13 @@ def get_metric_column(filename, column_index):
 
 
 def t_test(system_1, system_2, column_index, column_name):
+    """Perform t-test to compare two different systems
+    Args:
+        system_1 (string): System 1
+        system_2 (string): System 2
+        column_index (int): The index of the column to be retrieved
+        column_name (string): The name of the column for printing purposes
+    """
     scores_1 = get_metric_column('./eval_results/' + system_1 + '.eval', column_index)
     scores_2 = get_metric_column('./eval_results/' + system_2 + '.eval', column_index)
     _, pvalue = stats.ttest_ind(scores_1, scores_2)
@@ -85,10 +116,6 @@ def t_test(system_1, system_2, column_index, column_name):
         print('Systems {} and {} are not significantly different'.format(system_1, system_2))
     else:
         print('Systems {} and {} are significantly different\n'.format(system_1, system_2))
-    # return pvalue
-
-
-# def t_test(metric_column):
 
 
 if __name__ == '__main__':
@@ -97,11 +124,13 @@ if __name__ == '__main__':
     avg_scores_for_systems = []
     system_scores = []
 
+    # Loop through all files in the system_files array
     for system_file in system_files:
-        retrieved_docs = get_system_file('./systems/' + system_file + '.results')
+        retrieved_docs = get_retrieved_docs_for_system_file('./systems/' + system_file + '.results')
         scores = []
         system_metrics = []
 
+        # Loop through all the quries for each system file
         for query in retrieved_docs:
             first_10_retrieved = first_n_retrieved(retrieved_docs[query], 10)
             first_20_retrieved = first_n_retrieved(retrieved_docs[query], 20)
@@ -127,12 +156,16 @@ if __name__ == '__main__':
             system_metrics.append([precision_10, recall_50, r_precision, ap, nDCG_10, nDCG_20])
 
         scores = np.array(scores)
+        # Create eval.txt file for each system
         write_scores_to_file(system_file, scores, False)
         avg_scores_for_systems.append(np.mean(scores, axis=0))
         system_scores.append(system_metrics)
 
+    # Create All.eval file
     write_scores_to_file('All', avg_scores_for_systems, True)
 
+    # Perform t-test for the metrics that only one system performed the best,
+    # because there is no statistically significant difference between the systems if both systems achieve the same score
     t_test('S2', 'S1', 2, 'precision')
     t_test('S3', 'S6', 4, 'AP')
     t_test('S3', 'S6', 5, 'nDCG@10')

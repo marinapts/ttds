@@ -1,0 +1,11 @@
+- Baseline
+    - model and pred.out contain the baseline model
+    - Eval.txt => evaluation metrics using the baseline
+
+- /processed_datasets: Contains the train, test datasets with the links replaced by titles
+    - might be deleted if training is errorless
+    - model3, 3pred.out
+    - Eval3.txt
+
+- tweetsclassification
+    - tweets.train and tweets.test the new datasets (links replaced by titles)

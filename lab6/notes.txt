@@ -9,3 +9,8 @@
 
 - tweetsclassification
     - tweets.train and tweets.test the new datasets (links replaced by titles)
+
+
+
+@TODOS:
+- Create confusion matrix for baseline and best model

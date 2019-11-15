@@ -14,3 +14,4 @@
 
 @TODOS:
 - Create confusion matrix for baseline and best model
+- Class distribution graph for all tweets

@@ -1,4 +1,5 @@
 import re
+import requests
 from stemming.porter2 import stem
 
 
@@ -60,7 +61,8 @@ def map_classes_to_ids():
 
 
 def load_dataset(dataset_type, stop_words):
-    with open('./tweetsclassification/Tweets.14cat.' + dataset_type, 'r', encoding='ISO-8859-1') as f:
+    # with open('./tweetsclassification/Tweets.14cat.' + dataset_type, 'r', encoding='ISO-8859-1') as f:
+    with open('./tweetsclassification/tweets.' + dataset_type, 'r', encoding='ISO-8859-1') as f:
         lines = f.readlines()
         tweets_dict = dict()
         tweet_words = []  # all tweet words
@@ -71,6 +73,7 @@ def load_dataset(dataset_type, stop_words):
         for line in lines:
             line = line.strip().split('\t')
             tweet_id, tweet, target = line
+
             preprocessed_tweet = preprocess_tweet(tweet)
             tweets_dict[tweet_id] = tuple([preprocessed_tweet, target])
             tweet_words.extend(preprocessed_tweet)

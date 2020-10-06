@@ -72,7 +72,7 @@ def plot_zipfs_law(log_rank, log_frequency):
         log_rank (list): Log of word rank
         log_frequency (list): Log of word frequency
     """
-    plt.plot(log_rank, log_frequency)
+    plt.plot(log_rank, log_frequency, 'o')
 
     plt.suptitle('Zipf\'s Law')
     plt.xlabel('Rank (log scale)')
@@ -124,7 +124,7 @@ def heaps_law(tokenised_text):
     plt.suptitle('Heap\'s Law')
     plt.xlabel('Number of words')
     plt.ylabel('Vocabulary size')
-    # plt.show()
+    plt.show()
 
     return total_num_words_vector, np.array(vocab_size).reshape(-1, 1)
 
@@ -156,9 +156,11 @@ if __name__ == '__main__':
     BIBLE_FILE = 'bible.txt'
     WIKI_FILE = 'abstracts_wiki.txt'
     STOP_WORDS_FILE = 'stop_words.txt'
+    QURAN_FILE = 'quran.txt'
 
     WIKI_PREPROCESSED = 'wiki_preprocess.txt'
     BIBLE_PREPROCESSED = 'bible_preprocess.txt'
+    QURAN_PREPROCESSED = 'quran_preprocess.txt'
 
     download_file_and_save(
         'http://www.gutenberg.org/cache/epub/10/pg10.txt',
@@ -167,6 +169,9 @@ if __name__ == '__main__':
         'https://www.inf.ed.ac.uk/teaching/courses/tts/labs/lab1/abstracts.wiki.txt.gz',
         WIKI_FILE)
     download_file_and_save(
+        'https://www.inf.ed.ac.uk/teaching/courses/tts/labs/lab1/quran.txt',
+        QURAN_FILE)
+    download_file_and_save(
         'http://members.unine.ch/jacques.savoy/clef/englishST.txt',
         STOP_WORDS_FILE)
 
@@ -174,7 +179,8 @@ if __name__ == '__main__':
     with open(STOP_WORDS_FILE) as file:
         stop_words = [word.strip() for word in file]
 
-    with open(BIBLE_FILE, 'r') as f:
+    # My laptop crashes with the wiki abstracts
+    with open(QURAN_FILE, 'r') as f:
         lines = f.readlines()
         print('{} lines of text'.format(len(lines)))
 
@@ -183,7 +189,7 @@ if __name__ == '__main__':
         normalised_text = normalise(text_with_no_stop_words)
 
         # Save preprocessed text to a new file
-        with open(BIBLE_PREPROCESSED, 'w+') as new_file:
+        with open(QURAN_PREPROCESSED, 'w+') as new_file:
             normalised_text_string = ' '.join(normalised_text)
             new_file.write(normalised_text_string)
 

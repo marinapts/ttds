@@ -143,7 +143,6 @@ if __name__ == '__main__':
     # Load the provided trec sample xml
     root = load_xml(TREC_SAMPLE_FILE, './DOC')
     doc_list = []
-    token_doc_list = []
     tokenised_docs = {}
     doc_nums = []
     test_list = []
@@ -157,7 +156,6 @@ if __name__ == '__main__':
         doc_nums.append(doc_no)
         doc_list.append(headline_with_text)
         test_list.append(tokenise(headline_with_text))
-        token_doc_list.append(preprocess(headline_with_text))
         tokenised_docs[doc_no] = preprocess(headline_with_text)
 
     create_inverted_index(tokenised_docs)

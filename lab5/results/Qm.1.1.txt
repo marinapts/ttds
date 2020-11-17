@@ -1,0 +1,10 @@
+1 incom tax reduct + tax
+2 peac middl east + baker
+3 unemploy rate uk + unemploy
+4 industri scotland + 00
+5 industri comput + comput
+6 microsoft window + window
+7 stock market japan + fd
+8 educ comput + school
+9 health industri + health
+10 campaign polit parti + elect

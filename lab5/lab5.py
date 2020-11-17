@@ -1,13 +1,9 @@
-import urllib.request
-import os.path
 import pickle
 import xml.etree.ElementTree as ElementTree
-import ast
 import operator
 import numpy as np
-from collections import Counter, OrderedDict
+from collections import Counter
 from preprocess import tokenise, remove_stop_words, stemming
-from index_search import create_term_doc_collection, boolean_search_queries, save_boolean_search_results, ranked_retrieval, save_ranked_retrieval_results
 
 
 def preprocess(doc):
@@ -126,4 +122,4 @@ if __name__ == '__main__':
     top_n_docs = 1
     top_n_terms = 5
 
-    top_n_d_terms(1, 5)
+    top_n_d_terms(top_n_docs, top_n_terms)
